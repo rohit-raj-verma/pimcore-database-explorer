@@ -1,0 +1,16 @@
+services:
+    PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Controller\DefaultController:
+        autowire: true
+        autoconfigure: true
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\EventListener\AdminJsListener:
+        tags:
+            - { name: kernel.event_subscriber }
+
+    PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Studio\WebpackEntryPointProvider:
+        public: false
+        tags:
+            - { name: pimcore_studio_ui.webpack_entry_point_provider }

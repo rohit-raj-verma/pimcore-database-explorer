@@ -1,0 +1,46 @@
+{
+  "name": "rohit-raj-verma/pimcore-database-explorer",
+  "type": "pimcore-bundle",
+  "description": "Pimcore Database Explorer - Adminer-based database administration for Pimcore 11 & 12",
+  "keywords": ["pimcore", "adminer", "database", "db-explorer"],
+  "homepage": "https://github.com/rohit-raj-verma/pimcore-database-explorer",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Rohit Raj Verma",
+      "homepage": "https://github.com/rohit-raj-verma"
+    }
+  ],
+  "require": {
+    "pimcore/pimcore": "^11.0 || ^12.0",
+    "vrana/adminer": "^4.17"
+  },
+  "require-dev": {
+    "symfony/runtime": "^6.4 || ^7.0",
+    "symfony/dotenv": "^6.4 || ^7.0"
+  },
+  "suggest": {
+    "pimcore/admin-ui-classic-bundle": "For Database Administration menu in Pimcore Admin UI Classic",
+    "pimcore/studio-ui-bundle": "For Database Explorer in Pimcore Studio UI"
+  },
+  "autoload": {
+    "psr-4": {
+      "PimcoreDatabaseExplorer\\Bundle\\DatabaseExplorerBundle\\": "src/"
+    }
+  },
+  "extra": {
+    "pimcore": {
+      "bundles": [
+        "PimcoreDatabaseExplorer\\Bundle\\DatabaseExplorerBundle\\DatabaseExplorerBundle"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "symfony/runtime": true
+    }
+  }
+}

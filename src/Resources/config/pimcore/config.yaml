@@ -1,0 +1,11 @@
+doctrine:
+    orm:
+        auto_generate_proxy_classes: '%kernel.debug%'
+        entity_managers:
+            default:
+                auto_mapping: true
+
+pimcore_admin:
+    csrf_protection:
+        excluded_routes:
+            - database_explorer_adminer

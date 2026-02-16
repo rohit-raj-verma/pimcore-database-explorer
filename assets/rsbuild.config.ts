@@ -1,0 +1,141 @@
+import { defineConfig } from '@rsbuild/core'
+import { pluginReact } from '@rsbuild/plugin-react'
+import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
+import { pluginGenerateEntrypoints } from '@pimcore/studio-ui-bundle/rsbuild/plugins';
+import path from 'path'
+import fs from 'fs';
+import { randomUUID } from 'crypto';
+import packages from './package.json'
+
+const buildId = randomUUID();
+const publicPath = path.resolve(__dirname, '..', 'src', 'Resources', 'public', 'build');
+const buildPath = path.resolve(publicPath, buildId);
+
+if (fs.existsSync( path.resolve(publicPath))) {
+  fs.readdirSync(path.resolve(publicPath)).forEach((file) => {
+    fs.rmSync(path.resolve(publicPath, file), { recursive: true });
+  })
+}
+
+if (!fs.existsSync(publicPath)) {
+  fs.mkdirSync(publicPath, { recursive: true });
+}
+
+let nodeEnv = process.env.NODE_ENV;
+let env: 'development' | 'production' = 'production';
+
+const isDevServer = nodeEnv === 'dev-server';
+if (nodeEnv !== env) {
+  env = 'development';
+}
+
+const assetPrefix = '/bundles/databaseexplorer/build/' + buildId;
+
+export default defineConfig({
+  mode: env,
+  server: {
+    port: 3032,
+  },
+  dev: {
+    ...(!isDevServer ? { assetPrefix } : {}),
+    client: {
+      host: 'localhost',
+      port: 3032,
+      protocol: 'ws'
+    }
+  },
+  source: {
+    entry: {
+      main: './src/main.ts'
+    },
+    decorators: {
+      version: 'legacy'
+    }
+  },
+  output: {
+    manifest: true,
+    assetPrefix,
+    distPath: {
+      root: buildPath
+    },
+  },
+  tools: {
+    bundlerChain: (chain) => {
+      chain.output.uniqueName('pimcore_database_explorer_bundle');
+    },
+  },
+  plugins: [
+    pluginGenerateEntrypoints(),
+    pluginReact(),
+    pluginModuleFederation({
+      name: 'pimcore_database_explorer_bundle',
+      filename: 'static/js/remoteEntry.js',
+      exposes: {
+        '.': './src/plugin.ts',
+      },
+      dts: false,
+      remotes: {
+        '@pimcore/studio-ui-bundle': `promise new Promise(resolve => {
+          const studioUIBundleRemoteUrl = window.StudioUIBundleRemoteUrl
+          const script = document.createElement('script')
+
+          let hasScript = false;
+
+          document.querySelectorAll('script').forEach((el) => {
+            const elPathname = el.src.replace(/https?:\\/\\/[^/]+/, '')
+            const studioUIBundleRemoteUrlPathname = studioUIBundleRemoteUrl.replace(/https?:\\/\\/[^/]+/, '')
+
+            if (elPathname === studioUIBundleRemoteUrlPathname) {
+              hasScript = true;
+              return;
+            }
+          })
+
+          if (hasScript) {
+            resolve({
+              get: (request) => window['pimcore_studio_ui_bundle'].get(request),
+              init: (...arg) => {
+                try {
+                  return window['pimcore_studio_ui_bundle'].init(...arg)
+                } catch(e) {
+                  console.log('remote container already initialized')
+                }
+              }
+            })
+            return
+          }
+
+          script.src = studioUIBundleRemoteUrl
+          script.onload = () => {
+            const proxy = {
+              get: (request) => window['pimcore_studio_ui_bundle'].get(request),
+              init: (...arg) => {
+                try {
+                  return window['pimcore_studio_ui_bundle'].init(...arg)
+                } catch(e) {
+                  console.log('remote container already initialized')
+                }
+              }
+            }
+            resolve(proxy)
+          }
+          document.head.appendChild(script);
+        })
+        `,
+      },
+      shared: {
+        ...packages.dependencies,
+        react: {
+          singleton: true,
+          eager: true,
+          requiredVersion: false,
+        },
+        'react-dom': {
+          singleton: true,
+          eager: true,
+          requiredVersion: false,
+        }
+      },
+    })
+  ]
+})
