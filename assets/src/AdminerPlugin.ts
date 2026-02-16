@@ -1,10 +1,10 @@
 import { type IAbstractPlugin } from '@pimcore/studio-ui-bundle'
-import {CORSAdminerExtension} from "./modules/adminer-extension";
+import { DatabaseExplorerExtension } from "./modules/adminer-extension";
 
-export const CORSAdminerPlugin: IAbstractPlugin = {
+export const DatabaseExplorerStudioPlugin: IAbstractPlugin = {
     name: 'MainNavEntryPlugin',
 
     onStartup ({ moduleSystem }) {
-        moduleSystem.registerModule(CORSAdminerExtension)
+        moduleSystem.registerModule(DatabaseExplorerExtension)
     }
 }

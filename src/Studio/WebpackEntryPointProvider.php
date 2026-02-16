@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CORS\Bundle\AdminerBundle\Studio;
+namespace PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Studio;
 
 use Pimcore\Bundle\StudioUiBundle\Webpack\WebpackEntryPointProviderInterface;
 
@@ -10,7 +10,7 @@ final class WebpackEntryPointProvider implements WebpackEntryPointProviderInterf
 {
     public function getEntryPointsJsonLocations(): array
     {
-        return glob(__DIR__ . '/../Resources/public/build/*/entrypoints.json');
+        return glob(__DIR__ . '/../Resources/public/build/*/entrypoints.json') ?: [];
     }
 
     public function getEntryPoints(): array

@@ -2,137 +2,123 @@
 
 declare(strict_types=1);
 
-/*
- * CORS GmbH
- *
- * This source file is available under the MIT license
- *
- * Full copyright and license information is available in
- * LICENSE.md which is distributed with this source code.
- *
- * @copyright  Copyright (c) CORS GmbH (https://www.cors.gmbh)
- * @license    https://www.cors.gmbh/license MIT
- *
- */
+namespace PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Controller;
 
-namespace CORS\Bundle\AdminerBundle\Controller {
-    use CORS\Bundle\AdminerBundle\lib\Pim\Helper;
-    use Pimcore\Helper\Mail as MailHelper;
-    use Symfony\Component\HttpFoundation\Request;
-    use Symfony\Component\HttpFoundation\Response;
-    use Symfony\Component\HttpKernel\Profiler\Profiler;
-    use Symfony\Component\Routing\Annotation\Route;
+use PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Lib\Helper;
+use Pimcore\Helper\Mail as MailHelper;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Profiler\Profiler;
+use Symfony\Component\Routing\Annotation\Route;
 
-    class DefaultController
+class DefaultController
+{
+    protected string $adminerHome = '';
+
+    #[Route(path: '/admin/DatabaseExplorerBundle/adminer', name: 'database_explorer_adminer')]
+    public function adminerAction(?Profiler $profiler): Response
     {
-        protected string $adminerHome = '';
+        $this->prepare();
 
-        #[Route(path: '/admin/CORSAdminerBundle/adminer', name: 'cors_adminer')]
-        public function adminerAction(?Profiler $profiler): Response
-        {
-            $this->prepare();
-
-            $profiler?->disable();
-
-            chdir($this->adminerHome . 'adminer');
-            ob_start(static function (string $html) {
-                try {
-                    if (method_exists(MailHelper::class, 'setAbsolutePaths')) {
-                        /** @psalm-suppress InternalMethod, InternalClass */
-                        $html = MailHelper::setAbsolutePaths($html, null, Helper::getHostUrl() . '/admin/CORSAdminerBundle/adminer');
-                    } else {
-                        throw new \Exception('Method setAbsolutePaths does not exist in MailHelper.');
-                    }
-
-                    return str_replace('static/editing.js', Helper::getHostUrl() . '/admin/CORSAdminerBundle/adminer/static/editing.js', $html);
-                } catch (\Exception $e) {
-                    throw new \Exception('Error in MailHelper::setAbsolutePaths: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
-                }
-            });
-
-            /** @psalm-suppress UnresolvableInclude */
-            include $this->adminerHome . 'adminer/index.php';
-
-            @ob_get_flush();
-
-            $response = new Response();
-
-            return $this->mergeAdminerHeaders($response);
+        if ($profiler !== null) {
+            $profiler->disable();
         }
 
-        #[Route(path: '/admin/CORSAdminerBundle/adminer/static/{path}', requirements: ['path' => '.*'])]
-        #[Route(path: '/admin/CORSAdminerBundle/externals/{path}', requirements: ['path' => '.*'], defaults: ['type' => 'external'])]
-        public function proxyAction(Request $request): Response
-        {
-            $this->prepare();
-
-            $response = new Response();
-            $content = '';
-
-            // proxy for resources
-            $path = $request->get('path');
-
-            if (preg_match('@\.(css|js|ico|png|jpg|gif)$@', $path)) {
-                /** @psalm-suppress InternalMethod, InternalClass */
-                if ('external' === $request->get('type')) {
-                    $path = '../' . $path;
+        chdir($this->adminerHome . 'adminer');
+        $baseUrl = Helper::getHostUrl() . '/admin/DatabaseExplorerBundle/adminer';
+        ob_start(static function (string $html) use ($baseUrl) {
+            try {
+                if (method_exists(MailHelper::class, 'setAbsolutePaths')) {
+                    /** @psalm-suppress InternalMethod, InternalClass */
+                    $html = MailHelper::setAbsolutePaths($html, null, $baseUrl);
+                } else {
+                    throw new \Exception('Method setAbsolutePaths does not exist in MailHelper.');
                 }
 
-                if (str_starts_with($path, 'static/')) {
-                    $path = 'adminer/' . $path;
-                }
+                return str_replace('static/editing.js', $baseUrl . '/static/editing.js', $html);
+            } catch (\Exception $e) {
+                throw new \Exception('Error in MailHelper::setAbsolutePaths: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+            }
+        });
 
-                $filePath = $this->adminerHome . '/' . $path;
-                if (!file_exists($filePath)) {
-                    $filePath = $this->adminerHome . 'adminer/static/' . $path;
-                }
-                // it seems that css files need the right content-type (Chrome)
-                if (preg_match('@.css$@', $path)) {
-                    $response->headers->set('Content-Type', 'text/css');
-                } elseif (preg_match('@.js$@', $path)) {
-                    $response->headers->set('Content-Type', 'text/javascript');
-                }
+        /** @psalm-suppress UnresolvableInclude */
+        include $this->adminerHome . 'adminer/index.php';
 
-                if (file_exists($filePath)) {
-                    $content = file_get_contents($filePath);
+        @ob_get_flush();
 
-                    if (preg_match('@default.css$@', $path)) {
-                        // append custom styles, because in Adminer everything is hardcoded
-                        $content .= file_get_contents($this->adminerHome . 'designs/konya/adminer.css');
-                    }
+        $response = new Response();
+
+        return $this->mergeAdminerHeaders($response);
+    }
+
+    #[Route(path: '/admin/DatabaseExplorerBundle/adminer/static/{path}', requirements: ['path' => '.*'])]
+    #[Route(path: '/admin/DatabaseExplorerBundle/externals/{path}', requirements: ['path' => '.*'], defaults: ['type' => 'external'])]
+    public function proxyAction(Request $request): Response
+    {
+        $this->prepare();
+
+        $response = new Response();
+        $content = '';
+
+        $path = $request->get('path');
+
+        if (preg_match('@\.(css|js|ico|png|jpg|gif)$@', (string) $path)) {
+            if ('external' === $request->get('type')) {
+                $path = '../' . $path;
+            }
+
+            if (str_starts_with((string) $path, 'static/')) {
+                $path = 'adminer/' . $path;
+            }
+
+            $filePath = $this->adminerHome . '/' . $path;
+            if (!file_exists($filePath)) {
+                $filePath = $this->adminerHome . 'adminer/static/' . $path;
+            }
+            if (preg_match('@.css$@', (string) $path)) {
+                $response->headers->set('Content-Type', 'text/css');
+            } elseif (preg_match('@.js$@', (string) $path)) {
+                $response->headers->set('Content-Type', 'text/javascript');
+            }
+
+            if (file_exists($filePath)) {
+                $content = file_get_contents($filePath);
+
+                if (preg_match('@default.css$@', (string) $path)) {
+                    $content .= file_get_contents($this->adminerHome . 'designs/konya/adminer.css');
+                }
+            }
+        }
+
+        $response->setContent($content);
+
+        return $this->mergeAdminerHeaders($response);
+    }
+
+    public function prepare(): void
+    {
+        /** @psalm-suppress UndefinedConstant */
+        $this->adminerHome = PIMCORE_COMPOSER_PATH . '/vrana/adminer/';
+    }
+
+    protected function mergeAdminerHeaders(Response $response): Response
+    {
+        if (!headers_sent()) {
+            $headersRaw = headers_list();
+
+            foreach ($headersRaw as $header) {
+                $header = explode(':', $header, 2);
+                [$headerKey, $headerValue] = $header;
+
+                if ($headerKey && $headerValue) {
+                    $response->headers->set($headerKey, $headerValue);
                 }
             }
 
-            $response->setContent($content);
-
-            return $this->mergeAdminerHeaders($response);
+            header_remove();
         }
 
-        public function prepare(): void
-        {
-            /** @psalm-suppress UndefinedConstant */
-            $this->adminerHome = PIMCORE_COMPOSER_PATH . '/vrana/adminer/';
-        }
-
-        protected function mergeAdminerHeaders(Response $response): Response
-        {
-            if (!headers_sent()) {
-                $headersRaw = headers_list();
-
-                foreach ($headersRaw as $header) {
-                    $header = explode(':', $header, 2);
-                    [$headerKey, $headerValue] = $header;
-
-                    if ($headerKey && $headerValue) {
-                        $response->headers->set($headerKey, $headerValue);
-                    }
-                }
-
-                header_remove();
-            }
-
-            return $response;
-        }
+        return $response;
     }
 }
 
@@ -140,6 +126,7 @@ namespace {
     use Pimcore\Cache;
     use Pimcore\Db;
     use Pimcore\Tool\Session;
+    use PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Lib\AdminerPlugins;
 
     if (!function_exists('adminer_object')) {
         function adminer_object()
@@ -150,13 +137,13 @@ namespace {
             /** @psalm-suppress UnresolvableInclude */
             include_once $pluginDir . '/plugin.php';
 
-            foreach (glob($pluginDir . '/*.php') as $filename) {
+            foreach (glob($pluginDir . '/*.php') ?: [] as $filename) {
                 /** @psalm-suppress UnresolvableInclude */
                 include_once $filename;
             }
 
             $plugins = [
-                new \CORS\Bundle\AdminerBundle\lib\Pim\AdminerPlugins(),
+                new AdminerPlugins(),
                 new \AdminerFrames(),
                 new \AdminerDumpDate(),
                 new \AdminerDumpJson(),
@@ -166,7 +153,6 @@ namespace {
                 new \AdminerDumpAlter(),
             ];
 
-            // support for SSL (at least for PDO)
             /** @psalm-suppress InternalMethod, InternalClass */
             $driverOptions = \Pimcore\Db::get()->getParams()['driverOptions'] ?? [];
             $ssl = [
@@ -178,77 +164,76 @@ namespace {
                 $plugins[] = new \AdminerLoginSsl($ssl);
             }
 
-            class AdminerPimcore extends \AdminerPlugin
-            {
-                public function name(): string
-                {
-                    return '';
-                }
+            return new AdminerPimcore($plugins);
+        }
+    }
 
-                public function loginForm(): void
-                {
-                    parent::loginForm();
-                    echo '<script' . nonce() . ">document.querySelector('input[name=auth\\\\[db\\\\]]').value='" . $this->database() . "'; document.querySelector('form').submit()</script>";
-                }
+    class AdminerPimcore extends \AdminerPlugin
+    {
+        public function name(): string
+        {
+            return '';
+        }
 
-                public function permanentLogin($create = false): string
-                {
-                    if (method_exists(Session::class, 'getSessionId')) {
-                        return Session::getSessionId();
-                    }
+        public function loginForm(): void
+        {
+            parent::loginForm();
+            echo '<script' . nonce() . ">document.querySelector('input[name=auth\\\\[db\\\\]]').value='" . $this->database() . "'; document.querySelector('form').submit()</script>";
+        }
 
-                    return '';
-                }
-
-                public function login($login, $password): bool
-                {
-                    return true;
-                }
-
-                public function credentials(): array
-                {
-                    /** @psalm-suppress InternalMethod, InternalClass */
-                    $params = \Pimcore\Db::get()->getParams();
-
-                    $host = $params['host'] ?? null;
-                    if ($port = $params['port'] ?? null) {
-                        $host .= ':' . $port;
-                    }
-
-                    // server, username and password for connecting to database
-                    return [
-                        $host,
-                        $params['user'] ?? null,
-                        $params['password'] ?? null,
-                    ];
-                }
-
-                public function database(): string
-                {
-                    $db = \Pimcore\Db::get();
-                    // database name, will be escaped by Adminer
-                    return $db->getDatabase();
-                }
-
-                public function databases($flush = true)
-                {
-                    $cacheKey = 'pimcore_adminer_databases';
-
-                    if (!$return = Cache::load($cacheKey)) {
-                        $return = Db::getConnection()->fetchAllAssociative('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA');
-
-                        foreach ($return as &$ret) {
-                            $ret = $ret['SCHEMA_NAME'];
-                        }
-
-                        Cache::save($return, $cacheKey);
-                    }
-
-                    return $return;
-                }
+        public function permanentLogin($create = false): string
+        {
+            if (method_exists(Session::class, 'getSessionId')) {
+                return Session::getSessionId();
             }
 
-            return new AdminerPimcore($plugins);
+            return '';
+        }
+
+        public function login($login, $password): bool
+        {
+            return true;
+        }
+
+        public function credentials(): array
+        {
+            /** @psalm-suppress InternalMethod, InternalClass */
+            $params = \Pimcore\Db::get()->getParams();
+
+            $host = $params['host'] ?? null;
+            if ($port = $params['port'] ?? null) {
+                $host .= ':' . $port;
+            }
+
+            return [
+                $host,
+                $params['user'] ?? null,
+                $params['password'] ?? null,
+            ];
+        }
+
+        public function database(): string
+        {
+            $db = \Pimcore\Db::get();
+
+            return $db->getDatabase();
+        }
+
+        public function databases($flush = true)
+        {
+            $cacheKey = 'pimcore_adminer_databases';
+
+            if (!$return = Cache::load($cacheKey)) {
+                $return = Db::getConnection()->fetchAllAssociative('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA');
+
+                foreach ($return as &$ret) {
+                    $ret = $ret['SCHEMA_NAME'];
+                }
+
+                Cache::save($return, $cacheKey);
+            }
+
+            return $return;
         }
     }
 }

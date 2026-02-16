@@ -14,7 +14,7 @@ const containerStyle: CSSProperties = {
   height: '100%',
 };
 
-const ADMINER_ROUTE = '/admin/CORSAdminerBundle/adminer';
+const ADMINER_ROUTE = '/admin/DatabaseExplorerBundle/adminer';
 
 export const AdminerWidget: FC = () => {
   const src = useMemo(() => ADMINER_ROUTE, []);
@@ -23,7 +23,7 @@ export const AdminerWidget: FC = () => {
     <div style={ containerStyle }>
       <iframe
         src={ src }
-        title="Adminer"
+        title="Database Explorer"
         style={ iframeStyle }
         loading="lazy"
         referrerPolicy="same-origin"

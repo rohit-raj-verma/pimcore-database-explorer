@@ -2,20 +2,7 @@
 
 declare(strict_types=1);
 
-/*
- * CORS GmbH
- *
- * This source file is available under the MIT license
- *
- * Full copyright and license information is available in
- * LICENSE.md which is distributed with this source code.
- *
- * @copyright  Copyright (c) CORS GmbH (https://www.cors.gmbh)
- * @license    https://www.cors.gmbh/license MIT
- *
- */
-
-namespace CORS\Bundle\AdminerBundle\lib\Pim;
+namespace PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Lib;
 
 use Pimcore;
 use Pimcore\Cache;
@@ -26,15 +13,13 @@ use Symfony\Component\HttpFoundation\Request;
 
 class Helper
 {
-    /** @var Request */
+    /** @var Request|null */
     private static $request;
 
+    /** @var string|null */
     private static $hostUrl;
 
-    /**
-     * @return Request
-     */
-    public static function getRequest()
+    public static function getRequest(): Request
     {
         if (null === self::$request) {
             $requestStack = \Pimcore::getContainer()->get('request_stack');
@@ -62,7 +47,7 @@ class Helper
         return self::$request;
     }
 
-    public static function saveInCache($key, $value, array $tags = [])
+    public static function saveInCache($key, $value, array $tags = []): void
     {
         $cacheEnabled = Pimcore\Cache::isEnabled();
         if (!$cacheEnabled) {
@@ -107,7 +92,7 @@ class Helper
         return $config;
     }
 
-    public static function getHostUrl()
+    public static function getHostUrl(): ?string
     {
         if (null === self::$hostUrl) {
             $protocol = 'http' === self::getRequest()->getScheme() ? 'http' : 'https';

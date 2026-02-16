@@ -1,5 +1,5 @@
-import { CORSAdminerPlugin } from './AdminerPlugin';
+import { DatabaseExplorerStudioPlugin } from './AdminerPlugin';
 
 export {
-  CORSAdminerPlugin
+  DatabaseExplorerStudioPlugin
 }

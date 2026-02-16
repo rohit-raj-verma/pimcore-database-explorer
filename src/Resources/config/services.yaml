@@ -1,16 +1,16 @@
 services:
-    CORS\Bundle\AdminerBundle\Controller\DefaultController:
+    PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Controller\DefaultController:
         autowire: true
         autoconfigure: true
         public: true
         tags:
             - { name: controller.service_arguments }
 
-    CORS\Bundle\AdminerBundle\EventListener\AdminJsListener:
+    PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\EventListener\AdminJsListener:
         tags:
             - { name: kernel.event_subscriber }
 
-    CORS\Bundle\AdminerBundle\Studio\WebpackEntryPointProvider:
+    PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Studio\WebpackEntryPointProvider:
         public: false
         tags:
             - { name: pimcore_studio_ui.webpack_entry_point_provider }

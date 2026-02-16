@@ -4,7 +4,7 @@ import {type MainNavRegistry} from '@pimcore/studio-ui-bundle/modules/app'
 import {type WidgetRegistry} from '@pimcore/studio-ui-bundle/modules/widget-manager'
 import AdminerWidget from "../components/AdminerWidget";
 
-export const CORSAdminerExtension: AbstractModule = {
+export const DatabaseExplorerExtension: AbstractModule = {
     onInit: (): void => {
         const mainNavRegistryService = container.get<MainNavRegistry>(serviceIds.mainNavRegistry)
 
@@ -16,9 +16,9 @@ export const CORSAdminerExtension: AbstractModule = {
         mainNavRegistryService.registerMainNavItem({
             path: 'System/Adminer',
             widgetConfig: {
-                name: 'DB Adminer',
-                id: 'cors-adminer',
-                component: 'cors-adminer',
+                name: 'DB Explorer',
+                id: 'database-explorer',
+                component: 'database-explorer',
                 config: {
                     icon: {
                         type: 'name',
@@ -30,7 +30,7 @@ export const CORSAdminerExtension: AbstractModule = {
 
         const widgetRegistryService = container.get<WidgetRegistry>(serviceIds.widgetManager)
         widgetRegistryService.registerWidget({
-            name: 'cors-adminer',
+            name: 'database-explorer',
             component: AdminerWidget
         })
     }

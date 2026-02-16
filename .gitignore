@@ -46,4 +46,5 @@ public/bundles
 config/local
 vendor/
 src/Resources/app/node_modules/
+src/Resources/public/build/
 composer.lock

@@ -4,10 +4,10 @@ import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { pluginGenerateEntrypoints } from '@pimcore/studio-ui-bundle/rsbuild/plugins';
 import path from 'path'
 import fs from 'fs';
-import { v4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import packages from './package.json'
 
-const buildId = v4();
+const buildId = randomUUID();
 const publicPath = path.resolve(__dirname, '..', 'src', 'Resources', 'public', 'build');
 const buildPath = path.resolve(publicPath, buildId);
 
@@ -29,13 +29,15 @@ if (nodeEnv !== env) {
   env = 'development';
 }
 
+const assetPrefix = '/bundles/databaseexplorer/build/' + buildId;
+
 export default defineConfig({
   mode: env,
   server: {
     port: 3032,
   },
   dev: {
-    ...(!isDevServer ? {assetPrefix: '/bundles/corsadminer/build/' + buildId} : {}),
+    ...(!isDevServer ? { assetPrefix } : {}),
     client: {
       host: 'localhost',
       port: 3032,
@@ -52,21 +54,21 @@ export default defineConfig({
   },
   output: {
     manifest: true,
-    assetPrefix: '/bundles/corsadminer/build/' + buildId,
+    assetPrefix,
     distPath: {
       root: buildPath
     },
   },
   tools: {
-    bundlerChain: (chain, { env }) => {
-      chain.output.uniqueName('cors_adminer_bundle');
+    bundlerChain: (chain) => {
+      chain.output.uniqueName('pimcore_database_explorer_bundle');
     },
   },
   plugins: [
     pluginGenerateEntrypoints(),
     pluginReact(),
     pluginModuleFederation({
-      name: 'cors_adminer_bundle',
+      name: 'pimcore_database_explorer_bundle',
       filename: 'static/js/remoteEntry.js',
       exposes: {
         '.': './src/plugin.ts',

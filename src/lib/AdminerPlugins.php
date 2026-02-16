@@ -2,20 +2,7 @@
 
 declare(strict_types=1);
 
-/*
- * CORS GmbH
- *
- * This source file is available under the MIT license
- *
- * Full copyright and license information is available in
- * LICENSE.md which is distributed with this source code.
- *
- * @copyright  Copyright (c) CORS GmbH (https://www.cors.gmbh)
- * @license    https://www.cors.gmbh/license MIT
- *
- */
-
-namespace CORS\Bundle\AdminerBundle\lib\Pim;
+namespace PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Lib;
 
 class AdminerPlugins
 {
@@ -39,9 +26,7 @@ document.addEventListener('DOMContentLoaded', function(event) {
 		if (text.match(/^\d{10}$/)) {
 			date.setTime(parseInt(text) * 1000);
 			tds[i].oldDate = text;
-			// tds[i].newDate = date.toUTCString().substr(5); // UTC format
-			tds[i].newDate = date.toLocaleString();	// Local format
-			// tds[i].newDate = date.toLocaleFormat('%e %b %Y %H:%M:%S'); // Custom format - works in Firefox only
+			tds[i].newDate = date.toLocaleString();
 			tds[i].newDate = '<span title="' + tds[i].newDate + '">' + text + '</span>';
 			tds[i].innerHTML = tds[i].newDate;
 			tds[i].dateIsNew = true;
@@ -160,8 +145,6 @@ EOT
     .xborder {
         border: 1px inset rgb(204, 204, 204);
     }
-
-    /*textarea.sqlarea {display: block!important;}*/
 </style>
 EOT;
 
@@ -212,7 +195,6 @@ EOT;
     function compile (data) {
         document.getElementById('suggest_tablefields').innerHTML = data
         document.getElementById('suggest_search').value = '';
-        //console.log(data)
     }
 
     domReady(() => {
