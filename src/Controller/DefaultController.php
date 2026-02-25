@@ -2,123 +2,123 @@
 
 declare(strict_types=1);
 
-namespace PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Controller;
+namespace PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Controller {
+    use PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Lib\Helper;
+    use Pimcore\Helper\Mail as MailHelper;
+    use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\HttpKernel\Profiler\Profiler;
+    use Symfony\Component\Routing\Annotation\Route;
 
-use PimcoreDatabaseExplorer\Bundle\DatabaseExplorerBundle\Lib\Helper;
-use Pimcore\Helper\Mail as MailHelper;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Profiler\Profiler;
-use Symfony\Component\Routing\Annotation\Route;
-
-class DefaultController
-{
-    protected string $adminerHome = '';
-
-    #[Route(path: '/admin/DatabaseExplorerBundle/adminer', name: 'database_explorer_adminer')]
-    public function adminerAction(?Profiler $profiler): Response
+    class DefaultController
     {
-        $this->prepare();
+        protected string $adminerHome = '';
 
-        if ($profiler !== null) {
-            $profiler->disable();
+        #[Route(path: '/admin/DatabaseExplorerBundle/adminer', name: 'database_explorer_adminer')]
+        public function adminerAction(?Profiler $profiler): Response
+        {
+            $this->prepare();
+
+            if ($profiler !== null) {
+                $profiler->disable();
+            }
+
+            chdir($this->adminerHome . 'adminer');
+            $baseUrl = Helper::getHostUrl() . '/admin/DatabaseExplorerBundle/adminer';
+            ob_start(static function (string $html) use ($baseUrl) {
+                try {
+                    if (method_exists(MailHelper::class, 'setAbsolutePaths')) {
+                        /** @psalm-suppress InternalMethod, InternalClass */
+                        $html = MailHelper::setAbsolutePaths($html, null, $baseUrl);
+                    } else {
+                        throw new \Exception('Method setAbsolutePaths does not exist in MailHelper.');
+                    }
+
+                    return str_replace('static/editing.js', $baseUrl . '/static/editing.js', $html);
+                } catch (\Exception $e) {
+                    throw new \Exception('Error in MailHelper::setAbsolutePaths: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+                }
+            });
+
+            /** @psalm-suppress UnresolvableInclude */
+            include $this->adminerHome . 'adminer/index.php';
+
+            @ob_get_flush();
+
+            $response = new Response();
+
+            return $this->mergeAdminerHeaders($response);
         }
 
-        chdir($this->adminerHome . 'adminer');
-        $baseUrl = Helper::getHostUrl() . '/admin/DatabaseExplorerBundle/adminer';
-        ob_start(static function (string $html) use ($baseUrl) {
-            try {
-                if (method_exists(MailHelper::class, 'setAbsolutePaths')) {
-                    /** @psalm-suppress InternalMethod, InternalClass */
-                    $html = MailHelper::setAbsolutePaths($html, null, $baseUrl);
-                } else {
-                    throw new \Exception('Method setAbsolutePaths does not exist in MailHelper.');
+        #[Route(path: '/admin/DatabaseExplorerBundle/adminer/static/{path}', requirements: ['path' => '.*'])]
+        #[Route(path: '/admin/DatabaseExplorerBundle/externals/{path}', requirements: ['path' => '.*'], defaults: ['type' => 'external'])]
+        public function proxyAction(Request $request): Response
+        {
+            $this->prepare();
+
+            $response = new Response();
+            $content = '';
+
+            $path = $request->get('path');
+
+            if (preg_match('@\.(css|js|ico|png|jpg|gif)$@', (string) $path)) {
+                if ('external' === $request->get('type')) {
+                    $path = '../' . $path;
                 }
 
-                return str_replace('static/editing.js', $baseUrl . '/static/editing.js', $html);
-            } catch (\Exception $e) {
-                throw new \Exception('Error in MailHelper::setAbsolutePaths: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
-            }
-        });
-
-        /** @psalm-suppress UnresolvableInclude */
-        include $this->adminerHome . 'adminer/index.php';
-
-        @ob_get_flush();
-
-        $response = new Response();
-
-        return $this->mergeAdminerHeaders($response);
-    }
-
-    #[Route(path: '/admin/DatabaseExplorerBundle/adminer/static/{path}', requirements: ['path' => '.*'])]
-    #[Route(path: '/admin/DatabaseExplorerBundle/externals/{path}', requirements: ['path' => '.*'], defaults: ['type' => 'external'])]
-    public function proxyAction(Request $request): Response
-    {
-        $this->prepare();
-
-        $response = new Response();
-        $content = '';
-
-        $path = $request->get('path');
-
-        if (preg_match('@\.(css|js|ico|png|jpg|gif)$@', (string) $path)) {
-            if ('external' === $request->get('type')) {
-                $path = '../' . $path;
-            }
-
-            if (str_starts_with((string) $path, 'static/')) {
-                $path = 'adminer/' . $path;
-            }
-
-            $filePath = $this->adminerHome . '/' . $path;
-            if (!file_exists($filePath)) {
-                $filePath = $this->adminerHome . 'adminer/static/' . $path;
-            }
-            if (preg_match('@.css$@', (string) $path)) {
-                $response->headers->set('Content-Type', 'text/css');
-            } elseif (preg_match('@.js$@', (string) $path)) {
-                $response->headers->set('Content-Type', 'text/javascript');
-            }
-
-            if (file_exists($filePath)) {
-                $content = file_get_contents($filePath);
-
-                if (preg_match('@default.css$@', (string) $path)) {
-                    $content .= file_get_contents($this->adminerHome . 'designs/konya/adminer.css');
+                if (str_starts_with((string) $path, 'static/')) {
+                    $path = 'adminer/' . $path;
                 }
-            }
-        }
 
-        $response->setContent($content);
+                $filePath = $this->adminerHome . '/' . $path;
+                if (!file_exists($filePath)) {
+                    $filePath = $this->adminerHome . 'adminer/static/' . $path;
+                }
+                if (preg_match('@.css$@', (string) $path)) {
+                    $response->headers->set('Content-Type', 'text/css');
+                } elseif (preg_match('@.js$@', (string) $path)) {
+                    $response->headers->set('Content-Type', 'text/javascript');
+                }
 
-        return $this->mergeAdminerHeaders($response);
-    }
+                if (file_exists($filePath)) {
+                    $content = file_get_contents($filePath);
 
-    public function prepare(): void
-    {
-        /** @psalm-suppress UndefinedConstant */
-        $this->adminerHome = PIMCORE_COMPOSER_PATH . '/vrana/adminer/';
-    }
-
-    protected function mergeAdminerHeaders(Response $response): Response
-    {
-        if (!headers_sent()) {
-            $headersRaw = headers_list();
-
-            foreach ($headersRaw as $header) {
-                $header = explode(':', $header, 2);
-                [$headerKey, $headerValue] = $header;
-
-                if ($headerKey && $headerValue) {
-                    $response->headers->set($headerKey, $headerValue);
+                    if (preg_match('@default.css$@', (string) $path)) {
+                        $content .= file_get_contents($this->adminerHome . 'designs/konya/adminer.css');
+                    }
                 }
             }
 
-            header_remove();
+            $response->setContent($content);
+
+            return $this->mergeAdminerHeaders($response);
         }
 
-        return $response;
+        public function prepare(): void
+        {
+            /** @psalm-suppress UndefinedConstant */
+            $this->adminerHome = PIMCORE_COMPOSER_PATH . '/vrana/adminer/';
+        }
+
+        protected function mergeAdminerHeaders(Response $response): Response
+        {
+            if (!headers_sent()) {
+                $headersRaw = headers_list();
+
+                foreach ($headersRaw as $header) {
+                    $header = explode(':', $header, 2);
+                    [$headerKey, $headerValue] = $header;
+
+                    if ($headerKey && $headerValue) {
+                        $response->headers->set($headerKey, $headerValue);
+                    }
+                }
+
+                header_remove();
+            }
+
+            return $response;
+        }
     }
 }
 
