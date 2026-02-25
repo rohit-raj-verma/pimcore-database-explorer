@@ -164,76 +164,79 @@ namespace {
                 $plugins[] = new \AdminerLoginSsl($ssl);
             }
 
-            return new AdminerPimcore($plugins);
-        }
-    }
+            // Define the Adminer customization lazily to avoid loading Adminer classes during Symfony container build.
+            if (!class_exists('AdminerPimcore', false)) {
+                class AdminerPimcore extends \AdminerPlugin
+                {
+                    public function name(): string
+                    {
+                        return '';
+                    }
 
-    class AdminerPimcore extends \AdminerPlugin
-    {
-        public function name(): string
-        {
-            return '';
-        }
+                    public function loginForm(): void
+                    {
+                        parent::loginForm();
+                        echo '<script' . nonce() . ">document.querySelector('input[name=auth\\\\[db\\\\]]').value='" . $this->database() . "'; document.querySelector('form').submit()</script>";
+                    }
 
-        public function loginForm(): void
-        {
-            parent::loginForm();
-            echo '<script' . nonce() . ">document.querySelector('input[name=auth\\\\[db\\\\]]').value='" . $this->database() . "'; document.querySelector('form').submit()</script>";
-        }
+                    public function permanentLogin($create = false): string
+                    {
+                        if (method_exists(Session::class, 'getSessionId')) {
+                            return Session::getSessionId();
+                        }
 
-        public function permanentLogin($create = false): string
-        {
-            if (method_exists(Session::class, 'getSessionId')) {
-                return Session::getSessionId();
-            }
+                        return '';
+                    }
 
-            return '';
-        }
+                    public function login($login, $password): bool
+                    {
+                        return true;
+                    }
 
-        public function login($login, $password): bool
-        {
-            return true;
-        }
+                    public function credentials(): array
+                    {
+                        /** @psalm-suppress InternalMethod, InternalClass */
+                        $params = \Pimcore\Db::get()->getParams();
 
-        public function credentials(): array
-        {
-            /** @psalm-suppress InternalMethod, InternalClass */
-            $params = \Pimcore\Db::get()->getParams();
+                        $host = $params['host'] ?? null;
+                        if ($port = $params['port'] ?? null) {
+                            $host .= ':' . $port;
+                        }
 
-            $host = $params['host'] ?? null;
-            if ($port = $params['port'] ?? null) {
-                $host .= ':' . $port;
-            }
+                        return [
+                            $host,
+                            $params['user'] ?? null,
+                            $params['password'] ?? null,
+                        ];
+                    }
 
-            return [
-                $host,
-                $params['user'] ?? null,
-                $params['password'] ?? null,
-            ];
-        }
+                    public function database(): string
+                    {
+                        $db = \Pimcore\Db::get();
 
-        public function database(): string
-        {
-            $db = \Pimcore\Db::get();
+                        return $db->getDatabase();
+                    }
 
-            return $db->getDatabase();
-        }
+                    public function databases($flush = true)
+                    {
+                        $cacheKey = 'pimcore_adminer_databases';
 
-        public function databases($flush = true)
-        {
-            $cacheKey = 'pimcore_adminer_databases';
+                        if (!$return = Cache::load($cacheKey)) {
+                            $return = Db::getConnection()->fetchAllAssociative('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA');
 
-            if (!$return = Cache::load($cacheKey)) {
-                $return = Db::getConnection()->fetchAllAssociative('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA');
+                            foreach ($return as &$ret) {
+                                $ret = $ret['SCHEMA_NAME'];
+                            }
 
-                foreach ($return as &$ret) {
-                    $ret = $ret['SCHEMA_NAME'];
+                            Cache::save($return, $cacheKey);
+                        }
+
+                        return $return;
+                    }
                 }
-
-                Cache::save($return, $cacheKey);
             }
 
-            return $return;
+            return new \AdminerPimcore($plugins);
         }
     }
 }
