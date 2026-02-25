@@ -114,7 +114,8 @@ class Helper
                 self::$hostUrl = $protocol . '://' . $hostname . $port;
                 self::saveInCache('PIMCORE_HOSTURL', self::$hostUrl);
             } else {
-                self::$hostUrl = self::getFromCache('PIMCORE_HOSTURL');
+                $cachedHostUrl = self::getFromCache('PIMCORE_HOSTURL');
+                self::$hostUrl = is_string($cachedHostUrl) ? $cachedHostUrl : null;
 
                 if (!self::$hostUrl) {
                     $systemConfig = self::getPimcoreSystemConfiguration('general');
