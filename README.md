@@ -43,6 +43,8 @@ Supports **Pimcore 11** and **Pimcore 12**.
 
 4. In Pimcore admin go to **Tools → System Info & Tools → Database Administration** to open the database explorer.
 
+<img width="1916" height="865" alt="image" src="https://github.com/user-attachments/assets/fb402535-a40f-4e4a-9e2c-7b3ddcc7eccb" />
+
 ## Configuration
 
 The bundle uses your existing Pimcore database connection. No extra configuration is required.
